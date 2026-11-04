@@ -1,0 +1,15 @@
+# Visual Studio / .NET derleme çıktıları
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+TestResults/
+
+# Uygulamanın kaydettiği örnek log dosyaları
+tus_kayitlari_*.txt
