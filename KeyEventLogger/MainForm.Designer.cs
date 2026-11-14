@@ -13,6 +13,7 @@ namespace KeyEventLogger
 
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             pnlTop = new Panel();
             btnStart = new Button();
             btnStop = new Button();
@@ -23,6 +24,9 @@ namespace KeyEventLogger
             txtInput = new TextBox();
             lblLogTitle = new Label();
             lstLog = new ListBox();
+            lblFilter = new Label();
+            cmbTimeRange = new ComboBox();
+            filterTimer = new System.Windows.Forms.Timer(components);
             grpStats = new GroupBox();
             lblTotal = new Label();
             lblEvents = new Label();
@@ -132,14 +136,37 @@ namespace KeyEventLogger
             lblLogTitle.Name = "lblLogTitle";
             lblLogTitle.Text = "Kayıtlar (zaman · olay · tuş):";
             //
+            // lblFilter
+            //
+            lblFilter.AutoSize = true;
+            lblFilter.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
+            lblFilter.Location = new Point(318, 186);
+            lblFilter.Name = "lblFilter";
+            lblFilter.Text = "Zaman aralığı:";
+            //
+            // cmbTimeRange
+            //
+            cmbTimeRange.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbTimeRange.Font = new Font("Segoe UI", 9.75F);
+            cmbTimeRange.Location = new Point(422, 182);
+            cmbTimeRange.Name = "cmbTimeRange";
+            cmbTimeRange.Size = new Size(150, 25);
+            cmbTimeRange.TabStop = false;
+            cmbTimeRange.SelectedIndexChanged += CmbTimeRange_SelectedIndexChanged;
+            //
+            // filterTimer
+            //
+            filterTimer.Interval = 1000;
+            filterTimer.Tick += FilterTimer_Tick;
+            //
             // lstLog
             //
             lstLog.Font = new Font("Consolas", 10F);
             lstLog.HorizontalScrollbar = true;
             lstLog.IntegralHeight = false;
-            lstLog.Location = new Point(12, 208);
+            lstLog.Location = new Point(12, 212);
             lstLog.Name = "lstLog";
-            lstLog.Size = new Size(560, 300);
+            lstLog.Size = new Size(560, 296);
             lstLog.TabStop = false;
             //
             // grpStats
@@ -208,6 +235,8 @@ namespace KeyEventLogger
             Controls.Add(txtInput);
             Controls.Add(lblLogTitle);
             Controls.Add(lstLog);
+            Controls.Add(lblFilter);
+            Controls.Add(cmbTimeRange);
             Controls.Add(grpStats);
             Controls.Add(lblInfo);
             FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -235,6 +264,9 @@ namespace KeyEventLogger
         private TextBox txtInput;
         private Label lblLogTitle;
         private ListBox lstLog;
+        private Label lblFilter;
+        private ComboBox cmbTimeRange;
+        private System.Windows.Forms.Timer filterTimer;
         private GroupBox grpStats;
         private Label lblTotal;
         private Label lblEvents;

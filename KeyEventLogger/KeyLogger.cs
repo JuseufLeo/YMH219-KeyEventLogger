@@ -45,13 +45,20 @@ namespace KeyEventLogger
         }
 
         /// <summary>Toplam tuş basma sayısı (sadece KeyDown olayları sayılır).</summary>
-        public int TotalKeyPresses => entries.Count(e => e.EventType == KeyEventType.KeyDown);
+        public int TotalKeyPresses => CountKeyPresses(entries);
 
-        /// <summary>En sık basılan tuşlar ve kaçar kez basıldıkları.</summary>
-        public List<KeyValuePair<string, int>> MostUsedKeys(int count)
+        /// <summary>Verilen kayıtlardaki tuş basma (KeyDown) sayısı.</summary>
+        public static int CountKeyPresses(IEnumerable<KeyLogEntry> source) =>
+            source.Count(e => e.EventType == KeyEventType.KeyDown);
+
+        /// <summary>Tüm kayıtlarda en sık basılan tuşlar.</summary>
+        public List<KeyValuePair<string, int>> MostUsedKeys(int count) => MostUsedKeys(entries, count);
+
+        /// <summary>Verilen kayıtlarda en sık basılan tuşlar ve kaçar kez basıldıkları.</summary>
+        public static List<KeyValuePair<string, int>> MostUsedKeys(IEnumerable<KeyLogEntry> source, int count)
         {
             var counts = new Dictionary<string, int>();
-            foreach (KeyLogEntry e in entries)
+            foreach (KeyLogEntry e in source)
             {
                 if (e.EventType != KeyEventType.KeyDown)
                     continue;

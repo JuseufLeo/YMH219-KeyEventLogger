@@ -13,6 +13,8 @@ namespace KeyEventLogger
         public MainForm()
         {
             InitializeComponent();
+            cmbTimeRange.Items.AddRange(TimeRangeFilter.Options);
+            cmbTimeRange.SelectedIndex = 0;   // başlangıçta tüm kayıtlar
             logger.EntryAdded += Logger_EntryAdded;
             logger.RecordingChanged += (s, e) => UpdateStatus();
             UpdateStatus();
@@ -33,8 +35,46 @@ namespace KeyEventLogger
 
         private void Logger_EntryAdded(object sender, KeyLogEntry entry)
         {
+            // Yeni kayıt her zaman "şimdi" olduğu için her aralığa uyar
             lstLog.Items.Add(entry.ToString());
             lstLog.TopIndex = lstLog.Items.Count - 1;   // en son kayıt görünsün
+            UpdateStats();
+        }
+
+        // ---------- Zaman aralığı filtresi ----------
+
+        private TimeRangeFilter SelectedFilter =>
+            cmbTimeRange.SelectedItem as TimeRangeFilter ?? TimeRangeFilter.Options[0];
+
+        /// <summary>Seçili aralığa uyan kayıtlar.</summary>
+        private List<KeyLogEntry> VisibleEntries() => SelectedFilter.Apply(logger.Entries);
+
+        private void CmbTimeRange_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // "Son X saniye" seçiliyken zaman ilerledikçe eski kayıtlar listeden düşsün diye
+            // her saniye kontrol eden zamanlayıcı çalışır; "Tüm kayıtlar"da gerek yok.
+            filterTimer.Enabled = !SelectedFilter.IsAll;
+            RefreshLogList();
+            txtInput.Focus();
+        }
+
+        private void FilterTimer_Tick(object sender, EventArgs e)
+        {
+            // Aralık dışına çıkan kayıt varsa listeyi yeniden oluştur
+            if (VisibleEntries().Count != lstLog.Items.Count)
+                RefreshLogList();
+        }
+
+        /// <summary>Kayıt listesini seçili aralığa göre baştan doldurur.</summary>
+        private void RefreshLogList()
+        {
+            lstLog.BeginUpdate();
+            lstLog.Items.Clear();
+            foreach (KeyLogEntry entry in VisibleEntries())
+                lstLog.Items.Add(entry.ToString());
+            lstLog.EndUpdate();
+            if (lstLog.Items.Count > 0)
+                lstLog.TopIndex = lstLog.Items.Count - 1;
             UpdateStats();
         }
 
@@ -63,7 +103,8 @@ namespace KeyEventLogger
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (logger.Entries.Count == 0)
+            List<KeyLogEntry> toSave = VisibleEntries();   // seçili aralıktaki kayıtlar kaydedilir
+            if (toSave.Count == 0)
             {
                 MessageBox.Show("Kaydedilecek kayıt yok. Önce Başlat'a basıp birkaç tuşa basın.",
                     "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -76,8 +117,8 @@ namespace KeyEventLogger
 
             try
             {
-                LogFileWriter.Save(saveFileDialog.FileName, logger.Entries);
-                MessageBox.Show($"{logger.Entries.Count} kayıt dosyaya yazıldı:\n{saveFileDialog.FileName}",
+                LogFileWriter.Save(saveFileDialog.FileName, toSave);
+                MessageBox.Show($"{toSave.Count} kayıt ({SelectedFilter.Name.ToLower()}) dosyaya yazıldı:\n{saveFileDialog.FileName}",
                     "Kaydedildi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
@@ -112,12 +153,16 @@ namespace KeyEventLogger
 
         private void UpdateStats()
         {
-            lblTotal.Text = $"Toplam tuş basma: {logger.TotalKeyPresses}";
-            lblEvents.Text = $"Toplam olay: {logger.Entries.Count}";
+            // İstatistikler de seçili zaman aralığına göre hesaplanır
+            List<KeyLogEntry> visible = VisibleEntries();
+            lblTotal.Text = $"Toplam tuş basma: {KeyLogger.CountKeyPresses(visible)}";
+            lblEvents.Text = SelectedFilter.IsAll
+                ? $"Toplam olay: {visible.Count}"
+                : $"Olay: {visible.Count} / {logger.Entries.Count}";
 
             lstTop.Items.Clear();
             int rank = 1;
-            foreach (var pair in logger.MostUsedKeys(10))
+            foreach (var pair in KeyLogger.MostUsedKeys(visible, 10))
                 lstTop.Items.Add($"{rank++,2}. {pair.Key,-12} {pair.Value,4}");
         }
     }
